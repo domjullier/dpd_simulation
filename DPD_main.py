@@ -23,7 +23,7 @@ def genInitCond(numOfParticles, spaceSize, mass, radius):
         
     return particles
 
-def gravity(particle):
+def gravity(particle, step):
     if(particle.position.z<=0):
         particle.position.z=0
         particle.acceleration.z=0
@@ -32,16 +32,16 @@ def gravity(particle):
         return particle
     
     else:
-        particle.acceleration+=Vector(0,0,-9.82)
+        particle.acceleration+=Vector(0,0,(-9.82*step))
         return particle
         
-def calculateNewPositions(particles):
+def calculateNewPositions(particles, step):
     for p in particles:
 
         currentVelocity=Vector(p.velocity.x, p.velocity.y, p.velocity.z)
         p.velocity+=p.acceleration
 
-        p.position+=((currentVelocity+p.velocity)/2)
+        p.position+=((currentVelocity+p.velocity)/2)*step
         
         if p.position.z<=0:
             p.position.z=0
@@ -53,29 +53,44 @@ def calculateNewPositions(particles):
         
     return particles
 
-def nextStep(particles):
+def nextStep(particles, step):
     
     '''apply gravity'''
     for p in particles:
-        p=gravity(p)
+        p=gravity(p, step)
     
     '''apply more forces...'''
     
     '''Calculate new positions'''
-    particles = calculateNewPositions(particles)
+    particles = calculateNewPositions(particles, step)
     
     return particles
 
-start = genInitCond(numOfParticles=1, spaceSize=1000, mass=1, radius=1)
+def getListsForVisualization(particleWorld):
+    x = []
+    y = []
+    z = []
+    
+    newList = [[]]
+    
+    newList.append(x, y, z)
 
+particle_world = []
+start = genInitCond(numOfParticles=10, spaceSize=1000, mass=1, radius=1)
+
+particle_world.append(start)
 
 print "Beginning"
 for p in start:
     print p
 
 
+
 for i in range(10):
-    start=nextStep(start)
+    start=nextStep(start, 0.1)
+    particle_world.append(start)
     print "Step %s" % (i)
     for p in start:
         print p
+
+print "end"

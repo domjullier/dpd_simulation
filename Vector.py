@@ -53,3 +53,15 @@ class Vector(object):
             self.z/=other.z
         
         return Vector(self.x, self.y, self.z)
+    
+    def __mul__(self, other):
+        if (isinstance(other, float)):
+            self.x*=other
+            self.y*=other
+            self.z*=other
+        else:
+            self.x*=other.x
+            self.y*=other.y
+            self.z*=other.z
+        
+        return Vector(self.x, self.y, self.z)
