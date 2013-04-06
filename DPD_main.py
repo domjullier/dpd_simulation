@@ -2,6 +2,8 @@
 Created on Mar 15, 2013
 
 @author: easyrider
+
+Non object oriented version
 '''
 from Vector import Vector
 from Particle import Particle

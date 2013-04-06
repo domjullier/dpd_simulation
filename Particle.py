@@ -2,6 +2,9 @@
 Created on Mar 15, 2013
 
 @author: easyrider
+
+Non object oriented version
+
 '''
 
 class Particle(object):
