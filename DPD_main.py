@@ -7,9 +7,7 @@ Non object oriented version
 '''
 
 import copy
-import csv
-from Vector import Vector
-from Particle import Particle
+import csv, argparse
 from random import randrange
 
 if __name__ == '__main__':
@@ -21,14 +19,6 @@ if __name__ == '__main__':
 Generates initial condition with based on the given particle. 
 The function places randomly x Particles into the given space and returns a list of Particles.
 '''
-def genInitCond(numOfParticles, spaceSize, mass, radius):
-    
-    particles=[]
-       
-    for _ in range(numOfParticles):
-        particles.append(Particle(mass, radius, Vector(randrange(0, spaceSize), randrange(0, spaceSize), randrange(0, spaceSize)), Vector(0, 0, 0), Vector(0, 0, 0)))
-        
-    return particles
 
 def genInitCond2(ptype, numOfParticles, spaceSize, mass, radius):
     
@@ -40,17 +30,7 @@ def genInitCond2(ptype, numOfParticles, spaceSize, mass, radius):
         
     return particles
 
-def gravity(particle, step):
-    if(particle.position.z<=0):
-        particle.position.z=0
-        particle.acceleration.z=0
-        particle.velocity.z=0
 
-        return particle
-    
-    else:
-        particle.acceleration+=Vector(0,0,(-9.82*step))
-        return particle
     
 def gravity2(particle, step):
     if(particle[5]<=0):
@@ -92,18 +72,6 @@ def calculateNewPositions(particles, step):
         
     return particles
 
-def nextStep(particles, step):
-    
-    '''apply gravity'''
-    for p in particles:
-        p=gravity(p, step)
-    
-    '''apply more forces...'''
-    
-    '''Calculate new positions'''
-    particles = calculateNewPositions(particles, step)
-    
-    return particles
 
 def nextStep2(state, step):
     
@@ -118,78 +86,81 @@ def nextStep2(state, step):
     
     return particles
 
-def getListsForVisualization(particleWorld):
-    x = []
-    y = []
-    z = []
-    
-    newList = [[]]
-    
-    newList.append(x, y, z)
-    
-'''#Full structure
-|Full structure        |number of particles    |number of states    |time step between states    |size of world
-|type of particle    |mass    |radius        |position x|y|z    |velocity x|y|z    |acceleration x|y|z
-|type of particle    |mass    |radius        |position x|y|z    |velocity x|y|z    |acceleration x|y|z
-...
-'''
-    
 
-state = genInitCond2(ptype=1, numOfParticles=20, spaceSize=1000, mass=1, radius=1)
-state.extend(genInitCond2(ptype=2, numOfParticles=20, spaceSize=1000, mass=1, radius=1))
+
+aparser = argparse.ArgumentParser()
+aparser.add_argument('infile', help='input parameter')
+aparser.add_argument('outfile', help='output file')
+
+args = aparser.parse_args()
+
+#generate from inpufile
+
+f = open(args.infile)
+lines = f.readlines()
+f.close()
+
+
+spacesize=int(lines[0])
+simulatedSteps=int(lines[1])
+numberOfTypes=len(lines)-2
+numberOfParticles=[]
+mass=[]
+
+for i in range(2, len(lines)):
+    tmp=lines[i].split(',')
+    numberOfParticles.append(int(tmp[0]))
+    mass.append(int(tmp[1]))
+
+totalNumberOfParticles=0
+for p in numberOfParticles:
+    totalNumberOfParticles+=p
+
+simulatedSteps=int(lines[1])
+timerPerStep=0.1
+numberOfStates=simulatedSteps*totalNumberOfParticles
+
+state=[]
+for i in range(0, numberOfTypes):
+    state.extend(genInitCond2(ptype=i+1, numOfParticles=numberOfParticles[i], spaceSize=spacesize, mass=mass[i], radius=1))
+
 
 '''add initial state to history'''
 world_history = []
 world_history.extend(copy.deepcopy(state))
 
 
-
-
-world_history.extend(copy.deepcopy(state))
-
-#print world_history 
-     
-
-for i in range(1, 1500):
-    state=nextStep2(state, 0.01)
+for i in range(1, simulatedSteps):
+    state=nextStep2(state, timerPerStep)
     world_history.extend(copy.deepcopy(state))
-    #print "Step %s" % (i)
-    #for p in state:
-    #    print p
+ 
+f = open(args.outfile, 'wb')
 
-#print world_history 
-
-#|Full structure        |number of particles    |number of states    |time step between states    |size of world
-
-f = open('workfile', 'wb')
-
-#write fileheader
-numberOfStates = 0
-numberOfParticles = 40
-
-for _ in world_history:
-    numberOfStates+=1
     
-numberOfStates/=numberOfParticles
+numberOfStates/=totalNumberOfParticles
 
-header = [1,numberOfParticles, numberOfStates, 0.01, 1000]
+header = [1,totalNumberOfParticles, numberOfStates, timerPerStep, spacesize]
 
 wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
 
 wr.writerow(header)
 wr.writerow("")
-wr.writerow([1, 1, 1])
-wr.writerow([2, 1, 1])
+
+i=1
+for n, m  in numberOfParticles, mass:
+    wr.writerow([i, n, m])
+    i+=1
+
 
 wr.writerow("")
 cnt = 0
 for line in world_history:
-    if cnt == numberOfParticles:
+    if cnt == totalNumberOfParticles:
         wr.writerow("")
         cnt=0
         
     cnt=cnt+1
     wr.writerow(line[:1] + line[3:9])
     
-#wr.writerow(line[:1] + line[3:6])
+
 print "end"

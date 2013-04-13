@@ -75,7 +75,7 @@ class FileProcessor(object):
 
 
 
-from wx import *
+from wx import Timer
 
 step_ms = 40
 
@@ -103,7 +103,7 @@ fp.process_header()
 
 s = fp.process_step()
 
-from mayavi import * 
+from mayavi import mlab
 s = mlab.points3d(s[0], s[1], s[2], s[3], colormap="autumn", scale_factor=15)
 
 anim = Animator(s.mlab_source, fp)
@@ -111,4 +111,3 @@ anim.Start(step_ms, True)
 
 
 mlab.show()
-
