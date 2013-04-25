@@ -6,7 +6,7 @@ Created on Mar 15, 2013
 Non object oriented version
 '''
 
-import csv, argparse
+import csv, argparse, copy
 import ConfigParser
 from random import randrange
 
@@ -109,6 +109,7 @@ def applyForces(particle, r, step, e):
     #9,10,11: acceleration vector 
     a=((1.0/particle[1])*(f_c[0]+f_d[0]+f_r[0]), (1.0/particle[1])*(f_c[1]+f_d[1]+f_r[1]), (1.0/particle[1])*(f_c[2]+f_d[2]+f_r[2]))
     
+    
     particle[9]=a[0]
     particle[10]=a[1]
     particle[11]=a[2]
@@ -142,17 +143,17 @@ def calculateNewPositions(particles, step, spacesize):
             
         #x position is going around between right and left    
         if(p[3]<0):
-            p[3]=p[3]+spacesize #put the particle on to the opposite side of room
+            p[3]=(p[3]%spacesize) #put the particle on to the opposite side of room
             
         if(p[3]>spacesize):
-            p[3]=p[3]-spacesize
+            p[3]=(p[3]%spacesize)
             
         #y position
         if(p[4]<0):
-            p[4]=p[4]+spacesize #put the particle on to the opposite side of room
+            p[4]=(p[4]%spacesize) #put the particle on to the opposite side of room
             
         if(p[4]>spacesize):
-            p[4]=p[4]-spacesize
+            p[4]=(p[4]%spacesize)
             
 
         p[9]=0
@@ -165,9 +166,7 @@ def calculateNewPositions(particles, step, spacesize):
 
 def nextStep2(state, step, spacesize):
     
-    '''apply gravity'''
-    for p in state:
-        p=gravity2(p, step)
+    
     
     '''apply more forces...'''
     cnt=0
@@ -199,7 +198,9 @@ def nextStep2(state, step, spacesize):
     #print cnt
            
             #print state[i][3] #3,4,5 is position. 2 is radius      
-        
+    '''apply gravity'''
+    for p in state:
+        p=gravity2(p, step)  
     
     '''Calculate new positions'''
     particles = calculateNewPositions(state, step, spacesize)
@@ -249,7 +250,7 @@ totalNumberOfParticles=0
 for p in numberOfParticles:
     totalNumberOfParticles+=p
 
-timePerStep=0.1
+timePerStep=0.01
 numberOfStates=simulatedSteps*totalNumberOfParticles
 
 state=[]
@@ -258,8 +259,8 @@ for i in range(0, numberOfTypes):
 
 
 '''add initial state to history'''
-#world_history = []
-#world_history.extend(copy.deepcopy(state))
+world_history = []
+world_history.extend(copy.deepcopy(state))
 
 write_Header(simulatedSteps, totalNumberOfParticles, timePerStep, spacesize)
 
@@ -270,9 +271,35 @@ for i in range(1, simulatedSteps):
     state=nextStep2(state, timePerStep, spacesize)
     save_state(state, i)
     print ("%(i)i/%(total)i" % {"i":i+1, "total":simulatedSteps})
-    #world_history.extend(copy.deepcopy(state))
+    world_history.extend(copy.deepcopy(state))
+    
+#save also in one plike for compatibility purposes
+f = open("output_classic", 'wb')
+    
+header = [1,totalNumberOfParticles, simulatedSteps, timePerStep, spacesize]
+
+wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
+
+wr.writerow(header)
+wr.writerow("")
+
+i=1
+for (n, m) in zip(numberOfParticles,mass):
+    wr.writerow([i, n, m])
+    i+=1
 
 
+wr.writerow("")
+cnt = 0
+for line in world_history:
+    if cnt == totalNumberOfParticles:
+        wr.writerow("")
+        cnt=0
+        
+    cnt=cnt+1
+    wr.writerow(line[:1] + line[3:9])
+    
+f.close()
 
     
 

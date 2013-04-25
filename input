@@ -1,11 +1,11 @@
 [SimulationParameters]
 SpaceSize: 1000
-Steps: 100
+Steps: 1000
 
 [Type1]
-NumberOfParticles: 1000
+NumberOfParticles: 100
 Mass: 20
 
 [Type2]
-NumberOfParticles: 1000
+NumberOfParticles: 100
 Mass: 20
