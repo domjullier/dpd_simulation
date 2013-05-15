@@ -6,7 +6,7 @@ Created on Mar 15, 2013
 Non object oriented version
 '''
 
-import csv, argparse, copy
+import csv, argparse
 import ConfigParser
 from random import randrange
 
