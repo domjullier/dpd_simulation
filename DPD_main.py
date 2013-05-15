@@ -44,7 +44,7 @@ def write_Header(simulatedSteps, totalNumberOfParticles, timePerStep, spacesize)
 
 def save_state(state, stepnr):
     
-    filename = args.outfile + "_step_" + str(stepnr)
+    filename = args.outfile + "_step_" + str(stepnr).zfill(6)
     f = open(filename, 'wb')
     wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
     
@@ -98,13 +98,13 @@ def applyForces(particle, r, step, e):
  
     
     #conservativeForce(s_c, r, e_x, e_y, e_z)
-    f_c=conservativeForce(10, r, e[0], e[1], e[2])
+    f_c=conservativeForce(s_c, r, e[0], e[1], e[2])
     
     #dissipativeForce(s_d, r, v_x, v_y, v_z, e_x, e_y, e_z)
-    f_d=dissipativeForce(1, r, particle[6], particle[7], particle[8], e[0], e[1], e[2])
+    f_d=dissipativeForce(s_d, r, particle[6], particle[7], particle[8], e[0], e[1], e[2])
     
-    #randomForce(s,s_d,k_b,temp,delta_t, r, e_x, e_y, e_z)
-    f_r=randomForce(1,10,k_b,100,step, r, e[0], e[1], e[2])
+    #randomForce(xi,s_d,k_b,temperature,delta_t, r, e_x, e_y, e_z)
+    f_r=randomForce(xi,s_d,k_b,temperature,step, r, e[0], e[1], e[2])
     
     #9,10,11: acceleration vector 
     a=((1.0/particle[1])*(f_c[0]+f_d[0]+f_r[0]), (1.0/particle[1])*(f_c[1]+f_d[1]+f_r[1]), (1.0/particle[1])*(f_c[2]+f_d[2]+f_r[2]))
@@ -220,31 +220,29 @@ Config = ConfigParser.ConfigParser()
 Config.read(args.infile)
 
 
+
 #f = open(args.infile)
 #lines = f.readlines()
 #f.close()
 
 spacesize = int(ConfigSectionMap("SimulationParameters") ['spacesize'])
 simulatedSteps = int(ConfigSectionMap("SimulationParameters") ['steps'])
-#spacesize=int(lines[0])
-#simulatedSteps=int(lines[1])
+s_c = int(ConfigSectionMap("SimulationParameters") ['s_c'])
+s_d = int(ConfigSectionMap("SimulationParameters") ['s_d'])
+xi = int(ConfigSectionMap("SimulationParameters") ['xi'])
+temperature = int(ConfigSectionMap("SimulationParameters") ['temperature'])
 
 numberOfTypes = len(Config.sections()) - 1
 
-#numberOfTypes=len(lines)-2
 numberOfParticles=[]
 mass=[]
+radius=[]
 
 for p in range (1, len(Config.sections())):
     numberOfParticles.append(int(ConfigSectionMap(Config.sections()[p]) ['numberofparticles']))
     mass.append(int(ConfigSectionMap(Config.sections()[p]) ['mass']))
+    radius.append(int(ConfigSectionMap(Config.sections()[p]) ['radius']))
 
-#numberOfParticles.append(int(ConfigSectionMap("Particle") ['spacesize']))
-
-#for i in range(2, len(lines)):
-#    tmp=lines[i].split(',')
-#    numberOfParticles.append(int(tmp[0]))
-#    mass.append(int(tmp[1]))
 
 totalNumberOfParticles=0
 for p in numberOfParticles:
@@ -255,12 +253,12 @@ numberOfStates=simulatedSteps*totalNumberOfParticles
 
 state=[]
 for i in range(0, numberOfTypes):
-    state.extend(genInitCond2(ptype=i+1, numOfParticles=numberOfParticles[i], spaceSize=spacesize, mass=mass[i], radius=100))
+    state.extend(genInitCond2(ptype=i+1, numOfParticles=numberOfParticles[i], spaceSize=spacesize, mass=mass[i], radius=radius[i]))
 
 
-'''add initial state to history'''
-world_history = []
-world_history.extend(copy.deepcopy(state))
+#Deprecated: Used for classic one file output
+#world_history = []
+#world_history.extend(copy.deepcopy(state))
 
 write_Header(simulatedSteps, totalNumberOfParticles, timePerStep, spacesize)
 
@@ -271,35 +269,37 @@ for i in range(1, simulatedSteps):
     state=nextStep2(state, timePerStep, spacesize)
     save_state(state, i)
     print ("%(i)i/%(total)i" % {"i":i+1, "total":simulatedSteps})
-    world_history.extend(copy.deepcopy(state))
-    
+    #Deprecated: Used for classic one file output
+    #world_history.extend(copy.deepcopy(state))
+
+#Deprecated: Used for classic one file output    
 #save also in one plike for compatibility purposes
-f = open("output_classic", 'wb')
+#f = open("output_classic", 'wb')
     
-header = [1,totalNumberOfParticles, simulatedSteps, timePerStep, spacesize]
+#header = [1,totalNumberOfParticles, simulatedSteps, timePerStep, spacesize]
 
-wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
+#wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
 
-wr.writerow(header)
-wr.writerow("")
+#wr.writerow(header)
+#wr.writerow("")
 
-i=1
-for (n, m) in zip(numberOfParticles,mass):
-    wr.writerow([i, n, m])
-    i+=1
+#i=1
+#for (n, m) in zip(numberOfParticles,mass):
+#    wr.writerow([i, n, m])
+#    i+=1
 
 
-wr.writerow("")
-cnt = 0
-for line in world_history:
-    if cnt == totalNumberOfParticles:
-        wr.writerow("")
-        cnt=0
+#wr.writerow("")
+#cnt = 0
+#for line in world_history:
+#    if cnt == totalNumberOfParticles:
+#        wr.writerow("")
+#        cnt=0
         
-    cnt=cnt+1
-    wr.writerow(line[:1] + line[3:9])
+#    cnt=cnt+1
+#    wr.writerow(line[:1] + line[3:9])
     
-f.close()
+#f.close()
 
     
 

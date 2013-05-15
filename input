@@ -1,11 +1,18 @@
 [SimulationParameters]
 SpaceSize: 1000
-Steps: 1000
+Steps: 100
+
+s_c: 10
+s_d: 1
+xi: 1
+temperature: 100
 
 [Type1]
 NumberOfParticles: 100
-Mass: 20
+Mass: 10
+radius: 100
 
 [Type2]
 NumberOfParticles: 100
-Mass: 20
+Mass: 10
+radius: 100
