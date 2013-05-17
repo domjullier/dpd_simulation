@@ -44,7 +44,8 @@ def write_Header(simulatedSteps, totalNumberOfParticles, timePerStep, spacesize)
 
 def save_state(state, stepnr):
     
-    filename = args.outfile + "_step_" + str(stepnr).zfill(6)
+    #filename = args.outfile + "_step_" + str(stepnr).zfill(6)
+    filename = args.outfile + "_step_" + str(stepnr)
     f = open(filename, 'wb')
     wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
     
@@ -58,8 +59,11 @@ def conservativeForce(s_c, r, e_x, e_y, e_z):
     #e = 1,1,1
     return (s_c*(1-r)*e_x, s_c*(1-r)*e_y, s_c*(1-r)*e_z)
 
-def dissipativeForce(s_d, r, v_x, v_y, v_z, e_x, e_y, e_z): 
-    return (s_d*(1-r)**2*(v_x*e_x)*e_x, s_d*(1-r)**2*(v_y*e_y)*e_y, s_d*(1-r)**2*(v_z*e_z)*e_z)
+
+def dissipativeForce(s_d, r, v_x, v_y, v_z, e_x, e_y, e_z):
+    tmp= (s_d*(1-r)**2*(v_x*e_x+v_y*e_y+v_z*e_z))
+          
+    return (tmp*e_x, tmp*e_y, tmp*e_z)
 
 def randomForce(s,s_d,k_b,temp,delta_t, r, e_x, e_y, e_z):
     return (s*(2*s_d*k_b*(temp/delta_t))**(1/2)*(1-r)*e_x, s*(2*s_d*k_b*(temp/delta_t))**(1/2)*(1-r)*e_y, s*(2*s_d*k_b*(temp/delta_t))**(1/2)*(1-r)*e_z)
@@ -82,18 +86,18 @@ def genInitCond2(ptype, numOfParticles, spaceSize, mass, radius):
 
     
 def gravity2(particle, step):
-    if(particle[5]<=0):
-        particle[5]=0 #position z
-        particle[11]=0 #acceleration z
-        particle[8]=0 #velocity z
+    #if(particle[5]<=0):
+    #    particle[5]=0 #position z
+    #    particle[11]=0 #acceleration z
+    #    particle[8]=0 #velocity z
 
-        return particle
+    #    return particle
     
-    else:
-        particle[11]+=(-9.82*step)
-        return particle
+    #else:
+    particle[11]+=(-9.82*gravityFactor)
+    return particle
     
-def applyForces(particle, r, step, e):
+def applyForces(particle, r, step, e, s_c, s_d, xi, temperature):
     k_b=1.3806488 * 10.0**(-23)
  
     
@@ -106,13 +110,17 @@ def applyForces(particle, r, step, e):
     #randomForce(xi,s_d,k_b,temperature,delta_t, r, e_x, e_y, e_z)
     f_r=randomForce(xi,s_d,k_b,temperature,step, r, e[0], e[1], e[2])
     
+    
+    #debuging
+    #wr_log.writerow(((f_c[0]**2.0+f_c[1]**2.0+f_c[2]**2.0)**1.0/2, (f_d[0]**2.0 + f_d[1]**2.0 + f_d[2]**2.0)**1.0/2, (f_r[0]**2.0 + f_r[1]**2.0 + f_r[2]**2.0)**1.0/2))
+    #print '%s, %s, %s' % (str(f_c), str(f_d), str(f_r))
     #9,10,11: acceleration vector 
     a=((1.0/particle[1])*(f_c[0]+f_d[0]+f_r[0]), (1.0/particle[1])*(f_c[1]+f_d[1]+f_r[1]), (1.0/particle[1])*(f_c[2]+f_d[2]+f_r[2]))
     
     
-    particle[9]=a[0]
-    particle[10]=a[1]
-    particle[11]=a[2]
+    particle[9]+=a[0]
+    particle[10]+=a[1]
+    particle[11]+=a[2]
     
     
     return particle
@@ -123,9 +131,9 @@ def calculateNewPositions(particles, step, spacesize):
         currentVelocity=(p[6], p[7], p[8])
         
         #calculate current velocity + acceleration
-        p[6]+=p[9]
-        p[7]+=p[10]
-        p[8]+=p[11]
+        p[6]+=p[9]*step
+        p[7]+=p[10]*step
+        p[8]+=p[11]*step
         
         #calculate new position
         p[3]+=((currentVelocity[0]+p[6])/2)*step
@@ -163,37 +171,48 @@ def calculateNewPositions(particles, step, spacesize):
         
     return particles
 
-
+def twoParticles(particle_1, particle_2, step, radius_const, s_c, s_d, xi, temperature):
+    
+    distance=((particle_1[3]-particle_2[3])**2.0+(particle_1[4]-particle_2[4])**2.0+(particle_1[5]-particle_2[5])**2.0)**(1.0/2.0)
+    
+    if(distance<=radius_const):
+        r=1.0-(distance/radius_const)
+        #e vector
+        e_i=[particle_1[3]-particle_2[3], particle_1[4]-particle_2[4], particle_1[5]-particle_2[5]]
+        #normalization
+        length=(e_i[0]**2.0+e_i[1]**2.0+e_i[2]**2.0)**(1.0/2)
+        
+        if length!=0:
+            e_i[0]/=length
+            e_i[1]/=length
+            e_i[2]/=length
+        
+        
+        
+       
+        #e_j=(state[j][3]-state[i][3], state[j][4]-state[i][4], state[j][5]-state[i][5])
+        
+        e_j=(e_i[0]*(-1), e_i[1]*(-1), e_i[2]*(-1))
+       
+        
+        particle_1=applyForces(particle_1, r, step, e_i, s_c, s_d, xi, temperature)
+        particle_2=applyForces(particle_2, r, step, e_j, s_c, s_d, xi, temperature)
+        
+    return [particle_1, particle_2]
+    
+    
 def nextStep2(state, step, spacesize):
     
     
     
-    '''apply more forces...'''
+    '''apply forces...'''
     cnt=0
     for i in range(0, len(state)):
         for j in range(i+1, len(state)):
-            radius_sum=state[i][2]+state[j][2]
-            #radius_sum=100
-            distance=((state[i][3]-state[j][3])**2.0+(state[i][4]-state[j][4])**2.0+(state[i][5]-state[j][5])**2.0)**(1.0/2.0)
-            if(distance<=radius_sum):
-                r=1.0-(distance/radius_sum)
-                #e vector
-                e_i=[state[i][3]-state[j][3], state[i][4]-state[j][4], state[i][5]-state[j][5]]
-                #normalization
-                length=(e_i[0]**2.0+e_i[1]**2.0+e_i[2]**2.0)**(1.0/2)
-                e_i[0]/=length
-                e_i[1]/=length
-                e_i[2]/=length
-                
-               
-                #e_j=(state[j][3]-state[i][3], state[j][4]-state[i][4], state[j][5]-state[i][5])
-                
-                e_j=(e_i[0]*(-1), e_i[1]*(-1), e_i[2]*(-1))
-               
-                
-                state[i]=applyForces(state[i], r, step, e_i)
-                state[j]=applyForces(state[j], r, step, e_j)
-                cnt+=1
+            result = twoParticles(state[i], state[j], step, radius_const, s_c, s_d, xi, temperature)
+            state[i]=result[0]
+            state[j]=result[1]
+            cnt+=1
                 
     #print cnt
            
@@ -207,100 +226,116 @@ def nextStep2(state, step, spacesize):
     
     return particles
 
-
-#Program start
-aparser = argparse.ArgumentParser()
-aparser.add_argument('infile', help='input parameter')
-aparser.add_argument('outfile', help='output file')
-
-args = aparser.parse_args()
-
-#generate from inpufile
-Config = ConfigParser.ConfigParser()
-Config.read(args.infile)
-
-
-
-#f = open(args.infile)
-#lines = f.readlines()
-#f.close()
-
-spacesize = int(ConfigSectionMap("SimulationParameters") ['spacesize'])
-simulatedSteps = int(ConfigSectionMap("SimulationParameters") ['steps'])
-s_c = int(ConfigSectionMap("SimulationParameters") ['s_c'])
-s_d = int(ConfigSectionMap("SimulationParameters") ['s_d'])
-xi = int(ConfigSectionMap("SimulationParameters") ['xi'])
-temperature = int(ConfigSectionMap("SimulationParameters") ['temperature'])
-
-numberOfTypes = len(Config.sections()) - 1
-
-numberOfParticles=[]
-mass=[]
-radius=[]
-
-for p in range (1, len(Config.sections())):
-    numberOfParticles.append(int(ConfigSectionMap(Config.sections()[p]) ['numberofparticles']))
-    mass.append(int(ConfigSectionMap(Config.sections()[p]) ['mass']))
-    radius.append(int(ConfigSectionMap(Config.sections()[p]) ['radius']))
-
-
-totalNumberOfParticles=0
-for p in numberOfParticles:
-    totalNumberOfParticles+=p
-
-timePerStep=0.01
-numberOfStates=simulatedSteps*totalNumberOfParticles
-
-state=[]
-for i in range(0, numberOfTypes):
-    state.extend(genInitCond2(ptype=i+1, numOfParticles=numberOfParticles[i], spaceSize=spacesize, mass=mass[i], radius=radius[i]))
-
-
-#Deprecated: Used for classic one file output
-#world_history = []
-#world_history.extend(copy.deepcopy(state))
-
-write_Header(simulatedSteps, totalNumberOfParticles, timePerStep, spacesize)
-
-#save initial state
-save_state(state, 0)
-
-for i in range(1, simulatedSteps):
-    state=nextStep2(state, timePerStep, spacesize)
-    save_state(state, i)
-    print ("%(i)i/%(total)i" % {"i":i+1, "total":simulatedSteps})
-    #Deprecated: Used for classic one file output
-    #world_history.extend(copy.deepcopy(state))
-
-#Deprecated: Used for classic one file output    
-#save also in one plike for compatibility purposes
-#f = open("output_classic", 'wb')
+if __name__ == "__main__":
+    print 'start'
+    log = open("log", 'wb')
     
-#header = [1,totalNumberOfParticles, simulatedSteps, timePerStep, spacesize]
-
-#wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
-
-#wr.writerow(header)
-#wr.writerow("")
-
-#i=1
-#for (n, m) in zip(numberOfParticles,mass):
-#    wr.writerow([i, n, m])
-#    i+=1
-
-
-#wr.writerow("")
-#cnt = 0
-#for line in world_history:
-#    if cnt == totalNumberOfParticles:
-#        wr.writerow("")
-#        cnt=0
+    wr_log = csv.writer(log, quoting=csv.QUOTE_NONNUMERIC)
         
-#    cnt=cnt+1
-#    wr.writerow(line[:1] + line[3:9])
     
-#f.close()
-
     
-
-print "end"
+    
+    #Program start
+    aparser = argparse.ArgumentParser()
+    aparser.add_argument('infile', help='input parameter')
+    aparser.add_argument('outfile', help='output file')
+    
+    args = aparser.parse_args()
+    
+    #generate from inpufile
+    Config = ConfigParser.ConfigParser()
+    Config.read(args.infile)
+    
+    
+    
+    #f = open(args.infile)
+    #lines = f.readlines()
+    #f.close()
+    
+    spacesize = int(ConfigSectionMap("SimulationParameters") ['spacesize'])
+    simulatedSteps = int(ConfigSectionMap("SimulationParameters") ['steps'])
+    s_c = float(ConfigSectionMap("SimulationParameters") ['s_c'])
+    s_d = float(ConfigSectionMap("SimulationParameters") ['s_d'])
+    xi = float(ConfigSectionMap("SimulationParameters") ['xi'])
+    temperature = float(ConfigSectionMap("SimulationParameters") ['temperature'])
+    timePerStep = float(ConfigSectionMap("SimulationParameters") ['time_per_step'])
+    gravityFactor = float(ConfigSectionMap("SimulationParameters") ['gravity_factor'])
+    radius_const = float(ConfigSectionMap("SimulationParameters") ['radius_const'])
+    #gravityFactor = 0.001
+    
+    
+    #timePerStep=0.1
+    
+    
+    numberOfTypes = len(Config.sections()) - 1
+    
+    numberOfParticles=[]
+    mass=[]
+    radius=[]
+    
+    for p in range (1, len(Config.sections())):
+        numberOfParticles.append(int(ConfigSectionMap(Config.sections()[p]) ['numberofparticles']))
+        mass.append(int(ConfigSectionMap(Config.sections()[p]) ['mass']))
+        radius.append(int(ConfigSectionMap(Config.sections()[p]) ['radius']))
+    
+    
+    totalNumberOfParticles=0
+    for p in numberOfParticles:
+        totalNumberOfParticles+=p
+    
+    #timePerStep=0.005
+    numberOfStates=simulatedSteps*totalNumberOfParticles
+    
+    state=[]
+    for i in range(0, numberOfTypes):
+        state.extend(genInitCond2(ptype=i+1, numOfParticles=numberOfParticles[i], spaceSize=spacesize, mass=mass[i], radius=radius[i]))
+    
+    
+    #Deprecated: Used for classic one file output
+    #world_history = []
+    #world_history.extend(copy.deepcopy(state))
+    
+    write_Header(simulatedSteps, totalNumberOfParticles, timePerStep, spacesize)
+    
+    #save initial state
+    save_state(state, 0)
+    
+    for i in range(1, simulatedSteps):
+        state=nextStep2(state, timePerStep, spacesize)
+        save_state(state, i)
+        print ("%(i)i/%(total)i" % {"i":i+1, "total":simulatedSteps})
+        #Deprecated: Used for classic one file output
+        #world_history.extend(copy.deepcopy(state))
+    
+    #Deprecated: Used for classic one file output    
+    #save also in one plike for compatibility purposes
+    #f = open("output_classic", 'wb')
+        
+    #header = [1,totalNumberOfParticles, simulatedSteps, timePerStep, spacesize]
+    
+    #wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
+    
+    #wr.writerow(header)
+    #wr.writerow("")
+    
+    #i=1
+    #for (n, m) in zip(numberOfParticles,mass):
+    #    wr.writerow([i, n, m])
+    #    i+=1
+    
+    
+    #wr.writerow("")
+    #cnt = 0
+    #for line in world_history:
+    #    if cnt == totalNumberOfParticles:
+    #        wr.writerow("")
+    #        cnt=0
+            
+    #    cnt=cnt+1
+    #    wr.writerow(line[:1] + line[3:9])
+        
+    #f.close()
+    
+        
+    
+    print "end"
