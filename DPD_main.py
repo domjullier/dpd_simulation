@@ -57,16 +57,16 @@ def save_state(state, stepnr):
 
 def conservativeForce(s_c, r, e_x, e_y, e_z):
     #e = 1,1,1
-    return (s_c*(1-r)*e_x, s_c*(1-r)*e_y, s_c*(1-r)*e_z)
+    return (s_c*(1-r)*e_x, s_c*(1.-r)*e_y, s_c*(1-r)*e_z)
 
 
 def dissipativeForce(s_d, r, v_x, v_y, v_z, e_x, e_y, e_z):
-    tmp= (s_d*(1-r)**2*(v_x*e_x+v_y*e_y+v_z*e_z))
+    tmp= (s_d*(1.-r)**2*(v_x*e_x+v_y*e_y+v_z*e_z))
           
     return (tmp*e_x, tmp*e_y, tmp*e_z)
 
 def randomForce(s,s_d,k_b,temp,delta_t, r, e_x, e_y, e_z):
-    return (s*(2*s_d*k_b*(temp/delta_t))**(1/2)*(1-r)*e_x, s*(2*s_d*k_b*(temp/delta_t))**(1/2)*(1-r)*e_y, s*(2*s_d*k_b*(temp/delta_t))**(1/2)*(1-r)*e_z)
+    return (s*(2*s_d*k_b*(temp/delta_t))**(1/2.)*(1.-r)*e_x, s*(2*s_d*k_b*(temp/delta_t))**(1/2.)*(1.-r)*e_y, s*(2*s_d*k_b*(temp/delta_t))**(1/2.)*(1.-r)*e_z)
 
 
 '''
@@ -176,7 +176,7 @@ def twoParticles(particle_1, particle_2, step, radius_const, s_c, s_d, xi, tempe
     distance=((particle_1[3]-particle_2[3])**2.0+(particle_1[4]-particle_2[4])**2.0+(particle_1[5]-particle_2[5])**2.0)**(1.0/2.0)
     
     if(distance<=radius_const):
-        r=1.0-(distance/radius_const)
+        r=(distance/radius_const)
         #e vector
         e_i=[particle_1[3]-particle_2[3], particle_1[4]-particle_2[4], particle_1[5]-particle_2[5]]
         #normalization

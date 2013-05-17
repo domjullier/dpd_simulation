@@ -19,7 +19,7 @@ radius_const=200
 
 #Particles
 #particles.append([ptype, mass, radius, randrange(0, spaceSize), randrange(0, spaceSize), randrange(0, spaceSize), 0, 0, 0, 0, 0, 0])
-particle_1 = ([1, 10, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0])  
+particle_1 = ([1, 10, 100, 17, 10, 10, 0, 0, 0, 0, 0, 0])  
 particle_2 = ([1, 10, 100, 20, 10, 10, 0, 0, 0, 0, 0, 0])     
 
 print [particle_1, particle_2]
