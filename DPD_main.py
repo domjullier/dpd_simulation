@@ -45,7 +45,7 @@ def write_Header(simulatedSteps, totalNumberOfParticles, timePerStep, spacesize)
 def save_state(state, stepnr):
     
     #filename = args.outfile + "_step_" + str(stepnr).zfill(6)
-    filename = args.outfile + "_step_" + str(stepnr)
+    filename = args.outfile + "_step_" + str(stepnr).zfill(6)
     f = open(filename, 'wb')
     wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
     
