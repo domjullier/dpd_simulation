@@ -1,0 +1,11 @@
+
+# No precompiled files.
+*.pyc
+
+# No simulation results.
+result*
+output/
+
+# No log file.
+log
+
