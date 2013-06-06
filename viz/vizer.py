@@ -173,7 +173,8 @@ def main():
     s = rp.processStep()
 
     s = mlab.points3d(s[0], s[1], s[2], s[3], colormap="autumn",
-            scale_factor=15)
+            scale_factor = rp.wDesc.world_x_size / 100.)
+            #scale_factor=10)
 
     anim = Animator(s.mlab_source, rp)
     anim.Animate()
