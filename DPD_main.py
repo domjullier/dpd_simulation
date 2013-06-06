@@ -63,7 +63,7 @@ def conservativeForce(s_c, r, e_x, e_y, e_z):
 def dissipativeForce(s_d, r, v_x, v_y, v_z, e_x, e_y, e_z):
     tmp= (s_d*(1.-r)**2*(v_x*e_x+v_y*e_y+v_z*e_z))
           
-    return (tmp*e_x, tmp*e_y, tmp*e_z)
+    return (tmp*-e_x, tmp*-e_y, tmp*-e_z)
 
 def randomForce(s,s_d,k_b,temp,delta_t, r, e_x, e_y, e_z):
     return (s*(2*s_d*k_b*(temp/delta_t))**(1/2.)*(1.-r)*e_x, s*(2*s_d*k_b*(temp/delta_t))**(1/2.)*(1.-r)*e_y, s*(2*s_d*k_b*(temp/delta_t))**(1/2.)*(1.-r)*e_z)
@@ -142,12 +142,10 @@ def calculateNewPositions(particles, step, spacesize):
 
         #z position top and bottom is the end
         if p[5]<0: #pos z
-            p[5]=0
-            p[8]=0 #velo z
+            p[5]=(p[5]%spacesize)
             
         if p[5]>spacesize: #pos z
-            p[5]=spacesize
-            p[8]=0 #velo z
+            p[5]=(p[5]%spacesize)
             
         #x position is going around between right and left    
         if(p[3]<0):
