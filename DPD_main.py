@@ -6,7 +6,7 @@ Created on Mar 15, 2013
 Non object oriented version
 '''
 
-import csv, argparse
+import csv, argparse, os, glob
 import ConfigParser
 from random import randrange
 
@@ -244,7 +244,9 @@ if __name__ == "__main__":
     Config = ConfigParser.ConfigParser()
     Config.read(args.infile)
     
-    
+    #clean output folder
+    for fl in glob.glob(args.outfile + "*"):
+        os.remove(fl)
     
     #f = open(args.infile)
     #lines = f.readlines()
