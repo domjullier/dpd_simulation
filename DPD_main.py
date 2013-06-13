@@ -6,7 +6,7 @@ Created on Mar 15, 2013
 Non object oriented version
 '''
 
-import csv, argparse
+import csv, argparse, os, glob
 import ConfigParser
 from random import randrange
 
@@ -145,12 +145,10 @@ def calculateNewPositions(particles, step, spacesize):
 
         #z position top and bottom is the end
         if p[5]<0: #pos z
-            p[5]=0
-            p[8]=0 #velo z
+            p[5]=(p[5]%spacesize)
             
         if p[5]>spacesize: #pos z
-            p[5]=spacesize
-            p[8]=0 #velo z
+            p[5]=(p[5]%spacesize)
             
         #x position is going around between right and left    
         if(p[3]<0):
@@ -249,7 +247,9 @@ if __name__ == "__main__":
     Config = ConfigParser.ConfigParser()
     Config.read(args.infile)
     
-    
+    #clean output folder
+    for fl in glob.glob(args.outfile + "*"):
+        os.remove(fl)
     
     #f = open(args.infile)
     #lines = f.readlines()

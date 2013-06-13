@@ -163,6 +163,42 @@ class Animator(Timer):
         except StopIteration:
             log.info('Reached the end of animation.')
 
+
+def drawSpaceBorders(wDesc):
+    tubeR = 2.0
+    #coloR = (0, 0, 0) # czarny
+    coloR = "Greys"
+    scalarW = range(5,10)
+    scalarL = range(2)
+
+    sSize = wDesc.world_x_size
+
+    assert wDesc.world_x_size == wDesc.world_y_size
+    assert wDesc.world_y_size == wDesc.world_z_size
+
+    # na płaszczyźnie OX
+    mlab.plot3d([0,0,0,0,0], [0, sSize, sSize, 0, 0], [0, 0, sSize, sSize, 0],
+            scalarW, tube_radius=tubeR, colormap=coloR)
+
+    # na płaszczyśnie OX + sSize
+    mlab.plot3d([sSize,sSize,sSize,sSize,sSize], [0, sSize, sSize, 0, 0], [0, 0, sSize, sSize, 0],
+            scalarW, tube_radius=tubeR, colormap=coloR)
+
+    # cztery pozostałe linie
+    mlab.plot3d([0, sSize], [0,0], [0,0],
+            scalarL, tube_radius=tubeR, colormap=coloR)
+
+    mlab.plot3d([0, sSize], [0,0], [sSize,sSize],
+            scalarL, tube_radius=tubeR, colormap=coloR)
+
+    mlab.plot3d([0, sSize], [sSize,sSize], [0,0],
+            scalarL, tube_radius=tubeR, colormap=coloR)
+
+    mlab.plot3d([0, sSize], [sSize,sSize], [sSize,sSize],
+            scalarL, tube_radius=tubeR, colormap=coloR)
+
+
+
 def main():
     log.info('Program starting.')
 
@@ -176,8 +212,19 @@ def main():
             scale_factor = rp.wDesc.world_x_size / 100.)
             #scale_factor=10)
 
+    drawSpaceBorders(rp.wDesc)
+
     anim = Animator(s.mlab_source, rp)
     anim.Animate()
+
+    # Działa, jedna prosta linia.
+    #mlab.plot3d([0, 1000], [0, 1000], [0, 1000], tube_radius=2.0)
+
+    
+    # Ryduje jedną, grubą linie? 
+    #mlab.surf([ [400, 200, 400],
+    #    [400, 200, 400],
+    #    [400, 200, 400] ])
 
     mlab.show()
 
