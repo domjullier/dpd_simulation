@@ -55,18 +55,21 @@ def save_state(state, stepnr):
     f.close()
     pass
 
-def conservativeForce(s_c, r, e_x, e_y, e_z):
-    #e = 1,1,1
-    return (s_c*(1-r)*e_x, s_c*(1.-r)*e_y, s_c*(1-r)*e_z)
+def conservativeForce(Sc, R, Ex, Ey, Ez):
+    # temporary
+    T = Sc * (1.0 - R)
+    return (T*Ex, T*Ey, T*Ez)
 
 
-def dissipativeForce(s_d, r, v_x, v_y, v_z, e_x, e_y, e_z):
-    tmp= (s_d*(1.-r)**2*(v_x*e_x+v_y*e_y+v_z*e_z))
-          
-    return (tmp*e_x, tmp*e_y, tmp*e_z)
+def dissipativeForce(Sd, R, Vx, Vy, Vz, Ex, Ey, Ez):
+    # temporary
+    T = Sd*(1.0-R)**2 * (Vx*Ex + Vy*Ey + Vz*Ez)
+    return (T*Ex, T*Ey, T*Ez)
 
-def randomForce(s,s_d,k_b,temp,delta_t, r, e_x, e_y, e_z):
-    return (s*(2*s_d*k_b*(temp/delta_t))**(1/2.)*(1.-r)*e_x, s*(2*s_d*k_b*(temp/delta_t))**(1/2.)*(1.-r)*e_y, s*(2*s_d*k_b*(temp/delta_t))**(1/2.)*(1.-r)*e_z)
+def randomForce(S,Sd,kB,temp,delta_t, R, Ex, Ey, Ez):
+    #temporary
+    T = (2*Sd*kB*(temp/delta_t))**0.5 * (1.0 - R) * S
+    return (T*Ex, T*Ey, T*Ez)
 
 
 '''
@@ -227,7 +230,7 @@ def nextStep2(state, step, spacesize):
     return particles
 
 if __name__ == "__main__":
-    print 'start'
+    print('start')
     log = open("log", 'wb')
     
     wr_log = csv.writer(log, quoting=csv.QUOTE_NONNUMERIC)
@@ -338,4 +341,4 @@ if __name__ == "__main__":
     
         
     
-    print "end"
+    print("end")
