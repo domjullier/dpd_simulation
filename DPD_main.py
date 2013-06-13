@@ -10,9 +10,7 @@ import csv, argparse, os, glob
 import ConfigParser
 from random import randrange
 
-if __name__ == '__main__':
-    pass
-
+#------------------------------------------------------------------------------.
 def ConfigSectionMap(section):
     dict1 = {}
     options = Config.options(section)
@@ -26,8 +24,8 @@ def ConfigSectionMap(section):
             dict1[option] = None
     return dict1
 
+#------------------------------------------------------------------------------.
 def write_Header(simulatedSteps, totalNumberOfParticles, timePerStep, spacesize):
-     
     f = open(args.outfile, 'wb')
     
     header = [1,totalNumberOfParticles, simulatedSteps, timePerStep, spacesize]
@@ -42,8 +40,8 @@ def write_Header(simulatedSteps, totalNumberOfParticles, timePerStep, spacesize)
         wr.writerow([i, n, m])
         i+=1
 
+#------------------------------------------------------------------------------.
 def save_state(state, stepnr):
-    
     #filename = args.outfile + "_step_" + str(stepnr).zfill(6)
     filename = args.outfile + "_step_" + str(stepnr).zfill(6)
     f = open(filename, 'wb')
@@ -55,156 +53,152 @@ def save_state(state, stepnr):
     f.close()
     pass
 
+#------------------------------------------------------------------------------.
 def conservativeForce(Sc, R, Ex, Ey, Ez):
     # temporary
     T = Sc * (1.0 - R)
     return (T*Ex, T*Ey, T*Ez)
-
 
 def dissipativeForce(Sd, R, Vx, Vy, Vz, Ex, Ey, Ez):
     # temporary
     T = Sd*(1.0-R)**2 * (Vx*Ex + Vy*Ey + Vz*Ez)
     return (T*Ex, T*Ey, T*Ez)
 
-def randomForce(S,Sd,kB,temp,delta_t, R, Ex, Ey, Ez):
+def randomForce(Sr,Sd,kB,temp,delta_t, R, Ex, Ey, Ez):
     #temporary
-    T = (2*Sd*kB*(temp/delta_t))**0.5 * (1.0 - R) * S
+    T = (2*Sd*kB*(temp/delta_t))**0.5 * (1.0 - R) * Sr
     return (T*Ex, T*Ey, T*Ez)
 
+#------------------------------------------------------------------------------.
+
+Rx = 3
+Ry = 4
+Rz = 5
+
+Vx = 6
+Vy = 7
+Vz = 8
+
+Ax = 9
+Ay = 10
+Az = 11
+
+#------------------------------------------------------------------------------.
 
 '''
 Generates initial condition with based on the given particle. 
 The function places randomly x Particles into the given space and returns a list of Particles.
 '''
 def genInitCond2(ptype, numOfParticles, spaceSize, mass, radius):
-    
     particles=[]
-       
     for _ in range(numOfParticles):
         '''currentParticle = [type, mass, radius, randrange(0, spaceSize), randrange(0, spaceSize), randrange(0, spaceSize), 0, 0, 0, 0, 0, 0]'''
-        particles.append([ptype, mass, radius, randrange(0, spaceSize), randrange(0, spaceSize), randrange(0, spaceSize), 0, 0, 0, 0, 0, 0])
-        
+        particles.append([ptype, mass, radius,
+            randrange(0, spaceSize), #x
+            randrange(0, spaceSize), #y
+            randrange(0, spaceSize), #z
+            0, 0, 0, #V
+            0, 0, 0]) #A
     return particles
 
 
     
-def gravity2(particle, step):
-    #if(particle[5]<=0):
-    #    particle[5]=0 #position z
-    #    particle[11]=0 #acceleration z
-    #    particle[8]=0 #velocity z
-
-    #    return particle
+#------------------------------------------------------------------------------.
+def gravity2(P, step):
+    P[Az] -= 9.82*gravityFactor
+    return P
     
-    #else:
-    particle[11]+=(-9.82*gravityFactor)
-    return particle
-    
-def applyForces(particle, r, step, e, s_c, s_d, xi, temperature):
+#------------------------------------------------------------------------------.
+def applyForces(P, R, step, e, Sc, Sd, xi, temperature):
     k_b=1.3806488 * 10.0**(-23)
- 
     
-    #conservativeForce(s_c, r, e_x, e_y, e_z)
-    f_c=conservativeForce(s_c, r, e[0], e[1], e[2])
+    #conservativeForce(Sc, R, e_x, e_y, e_z)
+    fCons=conservativeForce(Sc, R, e[0], e[1], e[2])
     
-    #dissipativeForce(s_d, r, v_x, v_y, v_z, e_x, e_y, e_z)
-    f_d=dissipativeForce(s_d, r, particle[6], particle[7], particle[8], e[0], e[1], e[2])
+    #dissipativeForce(Sd, R, v_x, v_y, v_z, e_x, e_y, e_z)
+    fDiss=dissipativeForce(Sd, R, P[6], P[7], P[8], e[0], e[1], e[2])
     
-    #randomForce(xi,s_d,k_b,temperature,delta_t, r, e_x, e_y, e_z)
-    f_r=randomForce(xi,s_d,k_b,temperature,step, r, e[0], e[1], e[2])
+    #randomForce(xi,Sd,k_b,temperature,delta_t, R, e_x, e_y, e_z)
+    fRand=randomForce(xi,Sd,k_b,temperature,step, R, e[0], e[1], e[2])
     
+    massRev = 1.0 / P[1]
+    accelChange=(
+            massRev * (fCons[0] + fDiss[0] + fRand[0]),
+            massRev * (fCons[1] + fDiss[1] + fRand[1]),
+            massRev * (fCons[2] + fDiss[2] + fRand[2]))
     
-    #debuging
-    #wr_log.writerow(((f_c[0]**2.0+f_c[1]**2.0+f_c[2]**2.0)**1.0/2, (f_d[0]**2.0 + f_d[1]**2.0 + f_d[2]**2.0)**1.0/2, (f_r[0]**2.0 + f_r[1]**2.0 + f_r[2]**2.0)**1.0/2))
-    #print '%s, %s, %s' % (str(f_c), str(f_d), str(f_r))
-    #9,10,11: acceleration vector 
-    a=((1.0/particle[1])*(f_c[0]+f_d[0]+f_r[0]), (1.0/particle[1])*(f_c[1]+f_d[1]+f_r[1]), (1.0/particle[1])*(f_c[2]+f_d[2]+f_r[2]))
-    
-    
-    particle[9]+=a[0]
-    particle[10]+=a[1]
-    particle[11]+=a[2]
-    
-    
-    return particle
+    P[Ax] += accelChange[0]
+    P[Ay] += accelChange[1]
+    P[Az] += accelChange[2]
+    return P
         
+#------------------------------------------------------------------------------.
 def calculateNewPositions(particles, step, spacesize):
     for p in particles:
-
-        currentVelocity=(p[6], p[7], p[8])
+        currentVelocity=(p[Vx], p[Vy], p[Vz])
         
         #calculate current velocity + acceleration
-        p[6]+=p[9]*step
-        p[7]+=p[10]*step
-        p[8]+=p[11]*step
+        p[Vx] += p[Ax] * step
+        p[Vy] += p[Ay] * step
+        p[Vz] += p[Az] * step
         
         #calculate new position
-        p[3]+=((currentVelocity[0]+p[6])/2)*step
-        p[4]+=((currentVelocity[1]+p[7])/2)*step
-        p[5]+=((currentVelocity[2]+p[8])/2)*step
+        p[Rx] += ((currentVelocity[0]+p[Vx]) / 2) * step
+        p[Ry] += ((currentVelocity[1]+p[Vy]) / 2) * step
+        p[Rz] += ((currentVelocity[2]+p[Vz]) / 2) * step
+
+        #x position is going around between right and left    
+        if p[Rx] < 0 or p[Rx] > spacesize:
+            p[Rx] %= spacesize
+
+        if p[Ry] < 0 or p[Ry] > spacesize:
+            p[Ry] %= spacesize
 
         #z position top and bottom is the end
-        if p[5]<0: #pos z
-            p[5]=(p[5]%spacesize)
+        if p[Rz] < 0 or p[Rz] > spacesize:
+            p[Rz] %= spacesize
             
-        if p[5]>spacesize: #pos z
-            p[5]=(p[5]%spacesize)
-            
-        #x position is going around between right and left    
-        if(p[3]<0):
-            p[3]=(p[3]%spacesize) #put the particle on to the opposite side of room
-            
-        if(p[3]>spacesize):
-            p[3]=(p[3]%spacesize)
-            
-        #y position
-        if(p[4]<0):
-            p[4]=(p[4]%spacesize) #put the particle on to the opposite side of room
-            
-        if(p[4]>spacesize):
-            p[4]=(p[4]%spacesize)
-            
-
-        p[9]=0
-        p[10]=0
-        p[11]=0
-
-        
+        p[Ax]=0
+        p[Ay]=0
+        p[Az]=0
     return particles
 
-def twoParticles(particle_1, particle_2, step, radius_const, s_c, s_d, xi, temperature):
+#------------------------------------------------------------------------------.
+def relativeVec(P, Q):
+    #e vector
+    Ei=[P[3]-Q[3], P[4]-Q[4], P[5]-Q[5]]
+
+    #normalization
+    L = (Ei[0]**2.0 + Ei[1]**2.0 + Ei[2]**2.0) ** 0.5
+    print('L: {}'.format(L))
+    if L!=0:
+        Ei[0]/=L
+        Ei[1]/=L
+        Ei[2]/=L
+    return Ei
+
+#------------------------------------------------------------------------------.
+def twoParticles(P, Q, step, Rcut, s_c, s_d, xi, temperature):
     
-    distance=((particle_1[3]-particle_2[3])**2.0+(particle_1[4]-particle_2[4])**2.0+(particle_1[5]-particle_2[5])**2.0)**(1.0/2.0)
+    distance=((P[Rx]-Q[Rx]) ** 2.0 +
+            (P[Ry]-Q[Ry]) ** 2.0 +
+            (P[Rz]-Q[Rz]) ** 2.0) ** 0.5
     
-    if(distance<=radius_const):
-        r=(distance/radius_const)
-        #e vector
-        e_i=[particle_1[3]-particle_2[3], particle_1[4]-particle_2[4], particle_1[5]-particle_2[5]]
-        #normalization
-        length=(e_i[0]**2.0+e_i[1]**2.0+e_i[2]**2.0)**(1.0/2)
+    if distance < Rcut:
+        r = distance / Rcut
+
+        Ei = relativeVec(P, Q)
+        #Ej=(state[j][3]-state[i][3], state[j][4]-state[i][4], state[j][5]-state[i][5])
         
-        if length!=0:
-            e_i[0]/=length
-            e_i[1]/=length
-            e_i[2]/=length
-        
-        
-        
+        Ej=(Ei[0]*(-1), Ei[1]*(-1), Ei[2]*(-1))
        
-        #e_j=(state[j][3]-state[i][3], state[j][4]-state[i][4], state[j][5]-state[i][5])
         
-        e_j=(e_i[0]*(-1), e_i[1]*(-1), e_i[2]*(-1))
-       
-        
-        particle_1=applyForces(particle_1, r, step, e_i, s_c, s_d, xi, temperature)
-        particle_2=applyForces(particle_2, r, step, e_j, s_c, s_d, xi, temperature)
-        
-    return [particle_1, particle_2]
+        P = applyForces(P, r, step, Ei, s_c, s_d, xi, temperature)
+        Q = applyForces(Q, r, step, Ej, s_c, s_d, xi, temperature)
+    return [P, Q]
     
-    
+#------------------------------------------------------------------------------.
 def nextStep2(state, step, spacesize):
-    
-    
     
     '''apply forces...'''
     cnt=0
