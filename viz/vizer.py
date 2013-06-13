@@ -165,16 +165,16 @@ class Animator(Timer):
 
 
 def drawSpaceBorders(wDesc):
-    tubeR = 2.0
-    #coloR = (0, 0, 0) # czarny
-    coloR = "Greys"
-    scalarW = range(5,10)
-    scalarL = range(2)
-
     sSize = wDesc.world_x_size
 
     assert wDesc.world_x_size == wDesc.world_y_size
     assert wDesc.world_y_size == wDesc.world_z_size
+
+    tubeR = sSize / 500.0
+    #coloR = (0, 0, 0) # czarny
+    coloR = "Greys"
+    scalarW = range(5,10)
+    scalarL = range(2)
 
     # na płaszczyźnie OX
     mlab.plot3d([0,0,0,0,0], [0, sSize, sSize, 0, 0], [0, 0, sSize, sSize, 0],
