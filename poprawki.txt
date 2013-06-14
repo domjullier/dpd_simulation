@@ -1,0 +1,12 @@
+
+- zmiany w konfiguracji: globalna klasa SimParams, inne nazwy niektórych
+    parametrów, brak przekazywania parametrów, które dostępne są globalnie
+- chaos z niepotrzebnym zwracaniem cząstek, kiedy funkcje je tak naprawdę
+    aktualizują (więc nie ma potrzeby niczego zwracać)
+- brak minusa we wzorze na siłę dyssypatywną
+
+
+TODO:
+ - brak zmiennej losowej w funkcji losowej
+ - niektóre obliczenia powtarzają się dla pary cząstek (np. siły liczone są 2
+    razy, chociaż wiadomo że wyniki bedą różniły się jedynie znakiem)

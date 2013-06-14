@@ -1,0 +1,38 @@
+
+nextStep():
+    - wołana bezpośrednio w pętli po krokach symulacji w main(),
+        główna funkcja licząca nowy stan
+    - zawiera pętlę po wszystkich cząstkach liczącą
+        ich wzajemne oddziaływania, tzn. oblicza
+        przyspieszenia cząstek poprzez:
+
+            twoParticles():
+            - wołana przez nextStep2() w czasie iteracji
+                po cząstkach
+            - sprawdza odległość między cząstkami, jeśli mniejsza
+                od rCut, oblicza wektor przemieszczenia
+            - wywołuje:
+
+                applyForces():
+                - wołana przez twoParticles()
+                - oblicza trzy siły, na ich podstawie przyspieszenie
+                    i aktualizuje przysp. cząsteczki
+                - działa na jednej cząstce (ją też przyjmuje),
+                    ale wymaga argumentów policzonych dla 2 cząstek
+                - zwraca cząstkę, którą zaktualizowała???
+
+            - zwraca cząstki, które zaktualizowała
+
+    - dodaje do przyspieszeń grawitację
+    - oblicza nowe pozycje:
+
+        calculateNewPositions():
+        - wołana przez nextStep(), kiedy mamy już zaktualizowane
+            przyspieszenia
+        - na podstawie tych przysp. wyliczna prędkości oraz
+            nowe położenia cząstek
+        - ewentualnie zawija współrzędne, jeśli wybiegną 
+            poza przestrzeń
+        - zeruje przyspieszenia!!!
+        - zwraca 'state', tj. listę cząstek???
+
