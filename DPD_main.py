@@ -71,6 +71,10 @@ def randomForce(Sr,Sd,kB,temp,delta_t, R, Ex, Ey, Ez):
 
 #------------------------------------------------------------------------------.
 
+Type = 0
+Mass = 1
+Rads = 2
+
 Rx = 3
 Ry = 4
 Rz = 5
@@ -121,7 +125,7 @@ def applyForces(P, R, step, e, Sc, Sd, xi, temperature):
     #randomForce(xi,Sd,k_b,temperature,delta_t, R, e_x, e_y, e_z)
     fRand=randomForce(xi,Sd,k_b,temperature,step, R, e[0], e[1], e[2])
     
-    massRev = 1.0 / P[1]
+    massRev = 1.0 / P[Mass]
     accelChange=(
             massRev * (fCons[0] + fDiss[0] + fRand[0]),
             massRev * (fCons[1] + fDiss[1] + fRand[1]),
@@ -147,14 +151,13 @@ def calculateNewPositions(particles, step, spacesize):
         p[Ry] += ((currentVelocity[1]+p[Vy]) / 2) * step
         p[Rz] += ((currentVelocity[2]+p[Vz]) / 2) * step
 
-        #x position is going around between right and left    
+        # if any coordinate jumps out of space, wrap it around
         if p[Rx] < 0 or p[Rx] > spacesize:
             p[Rx] %= spacesize
 
         if p[Ry] < 0 or p[Ry] > spacesize:
             p[Ry] %= spacesize
 
-        #z position top and bottom is the end
         if p[Rz] < 0 or p[Rz] > spacesize:
             p[Rz] %= spacesize
             
@@ -221,6 +224,7 @@ def nextStep2(state, step, spacesize):
     
     return particles
 
+#------------------------------------------------------------------------------.
 if __name__ == "__main__":
     print('start')
     log = open("log", 'wb')
