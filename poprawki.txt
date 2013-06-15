@@ -7,6 +7,10 @@
 
 
 TODO:
- - brak zmiennej losowej w funkcji losowej
  - niektóre obliczenia powtarzają się dla pary cząstek (np. siły liczone są 2
     razy, chociaż wiadomo że wyniki bedą różniły się jedynie znakiem)
+ - wartości siły konserwatywnej wydają się być dość duże już na początku,
+    dla jedynie 2 cząstek, nie będą zbyt duże dla wielu??
+ - wartości siły dyssypatywnej są niewielkie na początku (bo zależą od prędkośći),
+    sprawdzić czy wzrastają z czasem dla większej ilości cząstek
+ - brak zmiennej losowej w sile losowej
