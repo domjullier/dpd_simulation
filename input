@@ -1,6 +1,6 @@
 [SimulationParameters]
 SpaceSize: 10
-Steps: 1000
+Steps: 100
 s_c: 10.
 s_d: 1.
 xi: 1.
