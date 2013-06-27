@@ -51,17 +51,17 @@ class SimParams:
 #------------------------------------------------------------------------------.
 def initSimParams(cParser):
     ParamsSectionName = 'SimulationParameters'
-    SimParams.SpaceSize   = cParser.getint(ParamsSectionName, 'spacesize')
-    SimParams.StepsN      = cParser.getint(ParamsSectionName, 'steps')
-    SimParams.Temperature = cParser.getfloat(ParamsSectionName, 'temperature')
-    SimParams.StepTime    = cParser.getfloat(ParamsSectionName, 'time_per_step')
+    SimParams.SpaceSize   = cParser.getint(ParamsSectionName, 'SpaceSize')
+    SimParams.StepsN      = cParser.getint(ParamsSectionName, 'StepsNumber')
+    SimParams.Temperature = cParser.getfloat(ParamsSectionName, 'Temperature')
+    SimParams.StepTime    = cParser.getfloat(ParamsSectionName, 'StepTime')
 
-    SimParams.ConsForceFactor = cParser.getfloat(ParamsSectionName, 's_c')
-    SimParams.DissForceFactor = cParser.getfloat(ParamsSectionName, 's_c')
-    SimParams.RandForceFactor = cParser.getfloat(ParamsSectionName, 'xi')
+    SimParams.ConsForceFactor = cParser.getfloat(ParamsSectionName, 'ConservativForceFactor')
+    SimParams.DissForceFactor = cParser.getfloat(ParamsSectionName, 'DissipativeForceFactor')
+    SimParams.RandForceFactor = cParser.getfloat(ParamsSectionName, 'RandomForceFactor')
 
-    SimParams.GravityFactor = cParser.getfloat(ParamsSectionName, 'gravity_factor')
-    SimParams.CutoffRadius  = cParser.getfloat(ParamsSectionName, 'radius_const')
+    SimParams.GravityFactor = cParser.getfloat(ParamsSectionName, 'GravityFactor')
+    SimParams.CutoffRadius  = cParser.getfloat(ParamsSectionName, 'CutoffRadius')
 
     cParser.remove_section(ParamsSectionName)
 
@@ -72,9 +72,9 @@ def initPartTypes(cParser):
 
     pTypes = []
     for partTypeSect in cParser.sections():
-        partN  = cParser.getint(partTypeSect, 'numberofparticles')
-        mass   = cParser.getfloat(partTypeSect, 'mass')
-        radius = cParser.getfloat(partTypeSect, 'radius')
+        partN  = cParser.getint(partTypeSect, 'NumberOfParticles')
+        mass   = cParser.getfloat(partTypeSect, 'Mass')
+        radius = cParser.getfloat(partTypeSect, 'Radius')
         pTypes.append((partN, mass, radius))
     return pTypes
 
@@ -84,8 +84,8 @@ def initUniverse(partTypes):
         Universe.extend(genInitCond2(pI, pT[0], pT[1], pT[2]))
 
 #------------------------------------------------------------------------------.
-def writeHeader(OutFilePrefix, pTypes):
-    with open(OutFilePrefix, 'wb') as f:
+def writeHeader(OutDir, OutFilePrefix, pTypes):
+    with open(os.path.join(OutDir, OutFilePrefix), 'wb') as f:
         wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
         
         header = [1, len(Universe), SimParams.StepsN, SimParams.StepTime, SimParams.SpaceSize]
@@ -96,9 +96,9 @@ def writeHeader(OutFilePrefix, pTypes):
             wr.writerow(pT)
 
 #------------------------------------------------------------------------------.
-def writeUniverseState(OutFilePrefix, stepnr):
+def writeUniverseState(OutDir, OutFilePrefix, stepnr):
     filename = OutFilePrefix + "_step_" + str(stepnr).zfill(6)
-    with open(filename, 'wb') as f:
+    with open(os.path.join(OutDir,filename), 'wb') as f:
         wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
         
         for line in Universe:
@@ -137,7 +137,7 @@ def randomForce(Sr, Sd, kB, T, stepT, R, Ex, Ey, Ez):
     return (T*Ex, T*Ey, T*Ez)
 
 #------------------------------------------------------------------------------.
-def applyForces(P, pToQ, pqRelDist):
+def applyForces(P, pToQ, pqRelDist, pqV):
 # args: P - particle
 #       pToQ - normalized vector from P to Q (other particle affecting P)
 #       pqRelDist - distance between P and Q relative to CutoffRadius
@@ -145,16 +145,16 @@ def applyForces(P, pToQ, pqRelDist):
     
     fCons = conservativeForce(SimParams.ConsForceFactor, pqRelDist,
             pToQ[0], pToQ[1], pToQ[2])
-    print('fCons: {}'.format(fCons))
+    #print('fCons: {}'.format(fCons))
     
     fDiss = dissipativeForce(SimParams.DissForceFactor, pqRelDist,
-            P[Vx], P[Vy], P[Vz], pToQ[0], pToQ[1], pToQ[2])
-    print('fDiss: {}'.format(fDiss))
+            pqV[0], pqV[1], pqV[2], pToQ[0], pToQ[1], pToQ[2])
+    #print('fDiss: {}'.format(fDiss))
     
     fRand = randomForce(SimParams.RandForceFactor, SimParams.DissForceFactor,
             k_b, SimParams.Temperature, SimParams.StepTime, pqRelDist,
             pToQ[0], pToQ[1], pToQ[2])
-    print('fRand: {}'.format(fRand))
+    #print('fRand: {}'.format(fRand))
     
     massRev = 1.0 / P[Mass]
     accelChange = (
@@ -162,9 +162,10 @@ def applyForces(P, pToQ, pqRelDist):
             massRev * (fCons[1] + fDiss[1] + fRand[1]),
             massRev * (fCons[2] + fDiss[2] + fRand[2]))
     
-    P[Ax] += accelChange[0]
-    P[Ay] += accelChange[1]
-    P[Az] += accelChange[2]
+    # TODO Czy to na pewno tak??
+    P[Ax] = accelChange[0]
+    P[Ay] = accelChange[1]
+    P[Az] = accelChange[2]
         
 #------------------------------------------------------------------------------.
 def relativeVec(P, Q, pqDist):
@@ -184,7 +185,7 @@ def twoParticles(P, Q):
     pqDist=((P[Rx]-Q[Rx]) ** 2.0 +
             (P[Ry]-Q[Ry]) ** 2.0 +
             (P[Rz]-Q[Rz]) ** 2.0) ** 0.5
-    print('P to Q dist: {}'.format(pqDist))
+    #print('P to Q dist: {}'.format(pqDist))
     
     if pqDist < SimParams.CutoffRadius:
         pqRelDist = pqDist / SimParams.CutoffRadius
@@ -194,9 +195,13 @@ def twoParticles(P, Q):
         pToQ = relativeVec(P, Q, pqDist)
         
         qToP = (pToQ[0]*(-1), pToQ[1]*(-1), pToQ[2]*(-1))
+
+        pqV = ((P[Vx]-Q[Vx]), (P[Vy]-Q[Vy]), (P[Vz]-Q[Vz]))
+        qpV = (-(P[Vx]-Q[Vx]), -(P[Vy]-Q[Vy]), -(P[Vz]-Q[Vz]))
+        #print('P to Q V: {}'.format(pqV))
         
-        applyForces(P, pToQ, pqRelDist)
-        applyForces(Q, qToP, pqRelDist)
+        applyForces(P, pToQ, pqRelDist, pqV)
+        applyForces(Q, qToP, pqRelDist, qpV)
     
 #------------------------------------------------------------------------------.
 def applyGravity(P):
@@ -253,24 +258,26 @@ def nextStep():
 
 #------------------------------------------------------------------------------.
 if __name__ == "__main__":
-    print('Program starting.')
-    
-    #Program start
     aparser = argparse.ArgumentParser()
-    aparser.add_argument('ConfigFile', help='input parameter')
-    aparser.add_argument('outfile', help='output file')
+    aparser.add_argument('ConfigFile', help='input configuration file')
+    aparser.add_argument('OutDir', help='directory to output results')
+    aparser.add_argument('--ResultPrefix', help='prefix of result files',\
+            default='result')
     
     args = aparser.parse_args()
     
+    #Program start
+    print('Program starting.')
+    
     # TODO Odkomentować!!!
-    #OutDirContent = os.listdir(args.OutDir)
-    #if OutDirContent:
-    #    print('Output directory is not empty! Do you want to erase it? [y/n]')
-    #    if raw_input() == 'y':
-    #        for f in OutDirContent: os.remove(f)
+    OutDirContent = os.listdir(args.OutDir)
+    if OutDirContent:
+        print('Output directory is not empty! Do you want to erase it? [y/n]')
+        if raw_input() == 'y':
+            for f in OutDirContent: os.remove(os.path.join(args.OutDir,f))
     #clean output folder
-    for fl in glob.glob(args.outfile + "*"):
-        os.remove(fl)
+    #for fl in glob.glob(args.outfile + "*"):
+    #    os.remove(fl)
 
     # Read configuration file.
     cParser = ConfigParser.RawConfigParser()
@@ -285,16 +292,17 @@ if __name__ == "__main__":
     initUniverse(partTypes)
 
     # Save header file - mostly simulation parameters.
-    writeHeader(args.outfile, partTypes)
+    writeHeader(args. OutDir, args.ResultPrefix, partTypes)
     
     # Save initial state
-    writeUniverseState(args.outfile, 0)
+    writeUniverseState(args.OutDir, args.ResultPrefix, 0)
     
     # Actual simulation loop.
     for i in range(1, SimParams.StepsN):
         nextStep()
-        writeUniverseState(args.outfile, i)
-        print ("%(i)i/%(total)i" % {"i":i+1, "total":SimParams.StepsN})
+        writeUniverseState(args.OutDir, args.ResultPrefix, i)
+        #if i % 10 == 0:
+        print('Step {} / {}.'.format(i, SimParams.StepsN))
     
     print("Finished.")
 
