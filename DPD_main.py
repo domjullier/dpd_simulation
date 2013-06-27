@@ -10,7 +10,8 @@ Non object oriented version
 
 import csv, argparse, os, glob
 import ConfigParser
-from random import randrange
+from random import randrange, uniform
+
 
 #------------------------------------------------------------------------------.
 # List contatining particles. Main data structure.
@@ -43,7 +44,6 @@ class SimParams:
 
     ConsForceFactor = 0
     DissForceFactor = 0
-    RandForceFactor = 0
 
     GravityFactor   = 0
     CutoffRadius    = 0
@@ -131,9 +131,8 @@ def dissipativeForce(Sd, R, Vx, Vy, Vz, Ex, Ey, Ez):
     T = -1 * Sd*(1.0-R)**2 * (Vx*Ex + Vy*Ey + Vz*Ez)
     return (T*Ex, T*Ey, T*Ez)
 
-def randomForce(Sr, Sd, kB, T, stepT, R, Ex, Ey, Ez):
-    # TODO Nie ma zmiennej losowej!!!
-    T = (2*Sd*kB*T/stepT)**0.5 * (1.0 - R) * Sr
+def randomForce(Sd, kB, T, stepT, R, Ex, Ey, Ez):
+    T = (2*Sd*kB*T/stepT)**0.5 * (1.0 - R) * uniform(0.0, 1.0)
     return (T*Ex, T*Ey, T*Ez)
 
 #------------------------------------------------------------------------------.
@@ -151,7 +150,7 @@ def applyForces(P, pToQ, pqRelDist, pqV):
             pqV[0], pqV[1], pqV[2], pToQ[0], pToQ[1], pToQ[2])
     #print('fDiss: {}'.format(fDiss))
     
-    fRand = randomForce(SimParams.RandForceFactor, SimParams.DissForceFactor,
+    fRand = randomForce(SimParams.DissForceFactor,
             k_b, SimParams.Temperature, SimParams.StepTime, pqRelDist,
             pToQ[0], pToQ[1], pToQ[2])
     #print('fRand: {}'.format(fRand))
